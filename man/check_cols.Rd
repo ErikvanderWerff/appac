@@ -8,8 +8,7 @@ The function returns a data frame with compliant names. Run \code{check_cols()}
 before calling \code{appac()}.
 }
 \usage{
-check_cols(data,
-           appac_colnames)
+check_cols(data, appac_colnames)
 }
 \arguments{
   \item{data}{

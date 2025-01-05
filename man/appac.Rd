@@ -99,8 +99,7 @@ P_ref <- median(PGC_TCD$Air_Pressure, na.rm = TRUE)
 appac_control <- list(min_data_points = 5, drift_model = "linear")
 
 ## appac will throw warnings that sample and peak names have been changed
-x <- appac(data = PGC_TCD, P_ref = P_ref,
-           appac_control = appac_control)
+x <- appac(data = PGC_TCD, P_ref = P_ref, appac_control = appac_control)
 
 ## view results
 print(paste("Air pressure correction coefficient (kappa):",

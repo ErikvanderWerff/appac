@@ -20,9 +20,12 @@ appac_step_3 <- function(appac, P_ref, appac_control) {
       coefficients = Correction@global.fit$coefficients
     )
   })
+  ## buggy / resolved
   residual_areas <- lapply(seq_along(Drift@samples), function(x) {
-    Drift@samples[[x]]$compensated.raw.area - expected_areas[[x]]
+    sweep(Drift@samples[[x]]$compensated.raw.area, 2,
+          expected_areas[[x]], "-")
   })
+
   P <- lapply(Drift@samples, function(x) x$pressure - P_ref)
   fit_bias <- lapply(
     seq_along(P),

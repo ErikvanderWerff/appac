@@ -124,56 +124,58 @@ appac_step_1 <- function(df, P_ref, appac_control) {
     # detect the breakpoints using Bayes change-detection
     # calulation is parallelized
     #----------------------------------------------------------
-    bp <- Rbeast::beast123(
-      y_grid,
-      season = "none",
-      detrend = FALSE,
-      hasOutlier = TRUE,
-      method = "bayes",
-      metadata = list(
-        whichDimIsTime = 1,
-        startTime = min(X),
-        # duplicated: time = X.scaled,
-        deltaTime = 1,
-        hasOutlier = TRUE,
-        detrend = FALSE
-      ),
-      mcmc = list(seed = 42),
-      extra = list(quiet = TRUE)
-    )
-    # ncp: number of occurences of the breakpoint
-    # ncp <- ceiling(bp$trend$ncp)
-    # cp: change points
-    cp <- bp$trend$cp
-    # cpPr: probabilities
-    cpPr <- bp$trend$cpPr
-    # the same for outliers (ocp)
-    # nocp <- ceiling(bp$outlier$ncp)
-    # ocp <- bp$outlier$cp
-    # ocpPr <- bp$outlier$cpPr
-
-    bpts <- data.frame(cp = sort(unique(as.numeric(cp))), ncp = NA, cpPr = NA)
-    if (is.matrix(cp)) {
-      for (i in seq_len(nrow(bpts))) {
-        # idx: vector of list elements which contains the breakpoint
-        idx <- sapply(seq_len(ncol(cp)), function(x) bpts[i, "cp"] %in% cp[, x])
-        ext <- lapply(which(idx), function(x) cp[, x])
-        bpts[i, "ncp"] <- sum(idx, na.rm = TRUE)
-        bpts[i, "cpPr"] <- sum(unlist(sapply(ext, function(y) {
-          cpPr[which(y == bpts[i, "cp"])]
-        })), na.rm = TRUE)
-      }
-    }
-    bpts <- bpts[!duplicated(bpts), ]
-    breakpoints <- bpts$cp
-    # don't forget to add the first and the last date of the time series
-    # to breakpoints
-    breakpoints <- sort(append(breakpoints, c(max(X.scaled), min(X.scaled))))
-    # delete nearby breakpoints which may be caused by missing data
-    # or uncertainty
-    if (1 %in% diff(breakpoints)) {
-      breakpoints <- breakpoints[-(which(diff(breakpoints) == 1) + 1)]
-    }
+    # browser()
+    # bp <- Rbeast::beast123(
+    #   y_grid,
+    #   season = "none",
+    #   detrend = FALSE,
+    #   hasOutlier = TRUE,
+    #   method = "bayes",
+    #   metadata = list(
+    #     whichDimIsTime = 1,
+    #     startTime = min(X),
+    #     # duplicated: time = X.scaled,
+    #     deltaTime = 1,
+    #     hasOutlier = TRUE,
+    #     detrend = FALSE
+    #   ),
+    #   mcmc = list(seed = 42),
+    #   extra = list(quiet = TRUE)
+    # )
+    # # ncp: number of occurences of the breakpoint
+    # # ncp <- ceiling(bp$trend$ncp)
+    # # cp: change points
+    # cp <- bp$trend$cp
+    # # cpPr: probabilities
+    # cpPr <- bp$trend$cpPr
+    # # the same for outliers (ocp)
+    # # nocp <- ceiling(bp$outlier$ncp)
+    # # ocp <- bp$outlier$cp
+    # # ocpPr <- bp$outlier$cpPr
+    #
+    # bpts <- data.frame(cp = sort(unique(as.numeric(cp))), ncp = NA, cpPr = NA)
+    # if (is.matrix(cp)) {
+    #   for (i in seq_len(nrow(bpts))) {
+    #     # idx: vector of list elements which contains the breakpoint
+    #     idx <- sapply(seq_len(ncol(cp)), function(x) bpts[i, "cp"] %in% cp[, x])
+    #     ext <- lapply(which(idx), function(x) cp[, x])
+    #     bpts[i, "ncp"] <- sum(idx, na.rm = TRUE)
+    #     bpts[i, "cpPr"] <- sum(unlist(sapply(ext, function(y) {
+    #       cpPr[which(y == bpts[i, "cp"])]
+    #     })), na.rm = TRUE)
+    #   }
+    # }
+    # bpts <- bpts[!duplicated(bpts), ]
+    # breakpoints <- bpts$cp
+    # # don't forget to add the first and the last date of the time series
+    # # to breakpoints
+    # breakpoints <- sort(append(breakpoints, c(max(X.scaled), min(X.scaled))))
+    # # delete nearby breakpoints which may be caused by missing data
+    # # or uncertainty
+    # if (1 %in% diff(breakpoints)) {
+    #   breakpoints <- breakpoints[-(which(diff(breakpoints) == 1) + 1)]
+    # }
+    breakpoints <- sort(c(max(X.scaled), min(X.scaled)))
     breakpoints <- data.table::as.IDate(breakpoints)
     if (any(is.na(breakpoints))) stop("NA/NaN in breakpoints")
     # rm(list = c("bp", "bpts", "cp", "cpPr", "ext", "ocp", "ocpPr"))
@@ -264,6 +266,12 @@ appac_step_1 <- function(df, P_ref, appac_control) {
       weight = x$n * x$se.slope / abs(x$slope)
     )
   }))
+  ## check if all values are finite
+  if (any(is.infinite(unlist(fit.data)))) {
+    browser()
+    ## must include inf >> NA
+  }
+  browser()
   global.fit <- stats::lm(
     slope ~ 0 + area_ref + area_ref2,
     data = fit.data,
@@ -302,6 +310,7 @@ appac_step_1 <- function(df, P_ref, appac_control) {
       P_ref,
       Correction@global.fit$coefficients
     )
+    # browser()
     for (j in seq_len(ncol(Correction@samples[[i]]$raw.area))) {
       idx.local.fits <- Correction@local.fits[[i]]$peak ==
         Correction@local.fits[[i]]$peak[j]
